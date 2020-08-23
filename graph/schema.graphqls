@@ -1,0 +1,23 @@
+type User{
+    id: String!
+    name: String!
+    profilePicture: String!
+    subscriber: Int!
+}
+
+type Query{
+    users: [User!]!
+}
+
+input newUser{
+    id: String!
+    name: String!
+    profilePicture: String!
+    subscriber: Int!
+}
+
+type Mutation{
+    createUser(input: newUser): User!
+    updateUser(id: String!, input:newUser): User!
+    deleteUser(id: String!): Boolean!
+}
