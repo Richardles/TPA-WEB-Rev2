@@ -1,0 +1,198 @@
+type Secuser{
+    id: String!
+    name: String!
+    profile_picture: String!
+    subscriber: Int!
+    email: String!
+    location: String!
+    premium: Boolean!
+    restriction: Boolean!
+    premium_date: String!
+    channel_icon: String!
+    channel_description: String!
+    channel_join_date: String!
+    channel_views: Int
+    channel_location: String!
+    channel_art: String
+    like_comment: String!
+    dislike_comment: String!
+    subscribed: String!
+}
+
+type Secvid{
+    id: Int!
+    url: String!
+    title: String!
+    likes: Int
+    dislikes: Int
+    description: String
+    thumbnail: String
+    userId: String
+    views: Int
+    playlist_id: Int!
+    category: String
+    audience: String
+    visibility: String
+    premium: String
+}
+
+type Playlist{
+    id: Int!
+    title: String!
+    total_videos: Int
+    views: Int
+    last_updated: String!
+    view_type: String!
+    description: String!
+    userId: String!
+    videos_id: String!
+}
+
+type Comment{
+    id: Int!
+    comment: String!
+    user_id: String!
+    date: String!
+    likes: Int!
+    dislikes: Int!
+    replies_id: Int
+    video_id: Int
+}
+
+type Post{
+    id: Int!
+    picture_url: String
+    likes: Int!
+    dislikes: Int!
+    date: String!
+    title: String!
+    description: String!
+    channel_id: String!
+}
+
+type Query{
+    users: [Secuser!]!
+    videos: [Secvid!]!
+    playlists: [Playlist!]!
+    comments: [Comment!]!
+    posts: [Post!]!
+
+    getVideo(id: Int!): Secvid!
+    getLastVideo(id: String!): Secvid!
+    getVideosByUserId(user_id: String!): [Secvid!]!
+    getVideosByCategory(category: String!): [Secvid!]!
+    getVideosByName(name: String!): [Secvid!]!
+
+    getUser(id: String!): Secuser!
+    getUsersByName(name: String!): [Secuser!]!
+
+    getPlaylist(id: Int!): Playlist!
+    getPlaylistByUser(id: String!): [Playlist!]!
+    getPlaylistsByName(name: String!): [Playlist!]!
+
+    getComment(id: Int!): Comment!
+    getCommentByVideoId(vid_id: Int!): [Comment!]!
+    getRepliesByCommentId(comment_id: Int!): [Comment!]!
+
+    getPost(id: Int!): Post!
+    getPostByChannelId(channel_id: String!): Post!
+    getPostsByChannelId(channel_id: String!): [Post!]!
+}
+
+input newUser{
+    id: String!
+    name: String!
+    profile_picture: String!
+    subscriber: Int!
+    email: String!
+    location: String!
+    premium: Boolean!
+    restriction: Boolean!
+    channel_icon: String!
+    channel_description: String!
+    channel_join_date: String!
+    channel_views: Int
+    channel_location: String!
+    channel_art: String
+    like_comment: String!
+    dislike_comment: String!
+    subscribed: String!
+}
+
+input newVideo{
+    url: String!
+    title: String!
+    likes: Int
+    dislikes: Int
+    description: String
+    thumbnail: String
+    userId: String
+    views: Int
+    playlist_id: Int!
+    category: String
+    audience: String
+    visibility: String
+    premium: String
+}
+
+input newPlaylist{
+    title: String!
+    total_videos: Int
+    views: Int
+    view_type: String!
+    description: String
+    userId: String!
+    videos_id: String!
+}
+
+input newComment{
+    comment: String!
+    user_id: String!
+    likes: Int!
+    dislikes: Int!
+    replies_id: Int
+    video_id: Int
+}
+
+input newPost{
+    picture_url: String
+    likes: Int!
+    dislikes: Int!
+    date: String!
+    title: String!
+    description: String!
+    channel_id: String!
+}
+
+type Mutation{
+    createUser(input: newUser): Secuser!
+    updateUser(id: String!, input:newUser): Secuser!
+    updateSubscriber(user_id: String!, target_id: String!): Secuser!
+    updateLikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
+    updateDislikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
+    updateChannelDescription(user_id: String!, newDesc: String!) : Secuser!
+    updateChannelArt(user_id: String!, newArt: String!): Secuser!
+    deleteUser(id: String!): Boolean!
+
+    createVideo(input: newVideo): Secvid!
+    updateVideo(id: Int!, input:newVideo): Secvid!
+    updateVideoView(id: Int!, view: Int): Secvid!
+    deleteVideo(id: Int!): Boolean!
+
+    createPlaylist(input: newPlaylist): Playlist!
+    updatePlaylist(id: Int!, input:newPlaylist): Playlist!
+    updatePlaylistTitle(id: Int!, newTitle: String!): Playlist!
+    updatePlaylistDescription(id: Int!, newDesc: String!): Playlist!
+    updatePlaylistVisibility(id: Int!, newVis: String!): Playlist!
+    updateVideoInPlaylist(playlist_id: Int!, video_id: Int!): Playlist!
+    emptyPlaylist(playlist_id: Int!): Playlist!
+    deletePlaylist(id: Int!): Boolean!
+
+    createComment(input: newComment): Comment!
+    updateComment(id: Int!, input: newComment): Comment!
+    deleteComment(id: Int!): Boolean!
+
+    createPost(input: newPost): Post!
+    updatePost(id: Int!, input: newPost): Post!
+    deletePost(id: Int!): Boolean!
+}
