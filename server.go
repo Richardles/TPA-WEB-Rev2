@@ -4,14 +4,14 @@ import (
 	"Go_Go_Go/graph"
 	"Go_Go_Go/graph/generated"
 	"Go_Go_Go/postgre"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
 	"github.com/go-pg/pg/v10"
 	"github.com/rs/cors"
 	"log"
 	"net/http"
 	"os"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/playground"
 )
 
 const defaultPort = "7000"

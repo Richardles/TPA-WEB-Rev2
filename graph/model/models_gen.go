@@ -7,8 +7,8 @@ type Comment struct {
 	Comment   string `json:"comment"`
 	UserID    string `json:"user_id"`
 	Date      string `json:"date"`
-	Likes     *int   `json:"likes"`
-	Dislikes  *int   `json:"dislikes"`
+	Likes     int    `json:"likes"`
+	Dislikes  int    `json:"dislikes"`
 	RepliesID *int   `json:"replies_id"`
 	VideoID   *int   `json:"video_id"`
 }
@@ -52,6 +52,9 @@ type Secuser struct {
 	ChannelViews       *int    `json:"channel_views"`
 	ChannelLocation    string  `json:"channel_location"`
 	ChannelArt         *string `json:"channel_art"`
+	LikeComment        string  `json:"like_comment"`
+	DislikeComment     string  `json:"dislike_comment"`
+	Subscribed         string  `json:"subscribed"`
 }
 
 type Secvid struct {
@@ -74,8 +77,8 @@ type Secvid struct {
 type NewComment struct {
 	Comment   string `json:"comment"`
 	UserID    string `json:"user_id"`
-	Likes     *int   `json:"likes"`
-	Dislikes  *int   `json:"dislikes"`
+	Likes     int    `json:"likes"`
+	Dislikes  int    `json:"dislikes"`
 	RepliesID *int   `json:"replies_id"`
 	VideoID   *int   `json:"video_id"`
 }
@@ -115,6 +118,9 @@ type NewUser struct {
 	ChannelViews       *int    `json:"channel_views"`
 	ChannelLocation    string  `json:"channel_location"`
 	ChannelArt         *string `json:"channel_art"`
+	LikeComment        string  `json:"like_comment"`
+	DislikeComment     string  `json:"dislike_comment"`
+	Subscribed         string  `json:"subscribed"`
 }
 
 type NewVideo struct {

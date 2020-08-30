@@ -47,6 +47,171 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *mod
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) UpdateSubscriber(ctx context.Context, userID string, targetID string) (*model.Secuser, error) {
+	var user model.Secuser
+	var target model.Secuser
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&target).Where("id = ?", targetID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.Subscribed, ",")
+
+	if arr[0] == "" {
+		user.Subscribed = targetID
+		target.Subscriber = target.Subscriber + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == targetID {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				target.Subscriber = target.Subscriber - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, targetID)
+			target.Subscriber = target.Subscriber + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.Subscribed = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&target).Where("id = ?", targetID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
+func (r *mutationResolver) UpdateLikeCommentInUser(ctx context.Context, userID string, commentID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var comment model.Comment
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&comment).Where("id = ?", commentID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.LikeComment, ",")
+
+	if arr[0] == "" {
+		user.LikeComment = strconv.Itoa(commentID)
+		comment.Likes = comment.Likes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(commentID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				comment.Likes = comment.Likes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(commentID))
+			comment.Likes = comment.Likes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.LikeComment = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&comment).Where("id = ?", commentID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
+func (r *mutationResolver) UpdateDislikeCommentInUser(ctx context.Context, userID string, commentID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var comment model.Comment
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&comment).Where("id = ?", commentID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.DislikeComment, ",")
+
+	if arr[0] == "" {
+		user.DislikeComment = strconv.Itoa(commentID)
+		comment.Dislikes = comment.Dislikes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(commentID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				comment.Dislikes = comment.Dislikes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(commentID))
+			comment.Dislikes = comment.Dislikes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.DislikeComment = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&comment).Where("id = ?", commentID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
 func (r *mutationResolver) UpdateChannelDescription(ctx context.Context, userID string, newDesc string) (*model.Secuser, error) {
 	var user model.Secuser
 
@@ -55,6 +220,22 @@ func (r *mutationResolver) UpdateChannelDescription(ctx context.Context, userID 
 		return nil, errors.New("failed to retrieve channel")
 	}
 	user.ChannelDescription = newDesc
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	return &user, nil
+}
+
+func (r *mutationResolver) UpdateChannelArt(ctx context.Context, userID string, newArt string) (*model.Secuser, error) {
+	var user model.Secuser
+
+	err := r.DB.Model(&user).Where("id = ?", userID).Select()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+	user.ChannelArt = &newArt
 	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
 	if updateErr != nil {
 		return nil, errors.New("failed to update view")
@@ -178,6 +359,7 @@ func (r *mutationResolver) UpdatePlaylistTitle(ctx context.Context, id int, newT
 		return nil, errors.New("failed to retrieve channel")
 	}
 	playlist.Title = newTitle
+	playlist.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 	_, uperr := r.DB.Model(&playlist).Where("id = ?", id).Update()
 	if uperr != nil {
 		return nil, errors.New("failed to update view")
@@ -193,6 +375,7 @@ func (r *mutationResolver) UpdatePlaylistDescription(ctx context.Context, id int
 		return nil, errors.New("failed to retrieve channel")
 	}
 	playlist.Description = newDesc
+	playlist.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 	_, uperr := r.DB.Model(&playlist).Where("id = ?", id).Update()
 	if uperr != nil {
 		return nil, errors.New("failed to update view")
@@ -208,6 +391,7 @@ func (r *mutationResolver) UpdatePlaylistVisibility(ctx context.Context, id int,
 		return nil, errors.New("failed to retrieve channel")
 	}
 	playlist.ViewType = newVis
+	playlist.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 	_, uperr := r.DB.Model(&playlist).Where("id = ?", id).Update()
 	if uperr != nil {
 		return nil, errors.New("failed to update view")
@@ -252,6 +436,21 @@ func (r *mutationResolver) UpdateVideoInPlaylist(ctx context.Context, playlistID
 	playlist.LastUpdated = time.Now().Format("2006-01-02 15:04:05")
 	_, updateErr := r.DB.Model(&playlist).Where("id = ?", playlistID).Update()
 	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &playlist, nil
+}
+
+func (r *mutationResolver) EmptyPlaylist(ctx context.Context, playlistID int) (*model.Playlist, error) {
+	var playlist model.Playlist
+
+	err := r.DB.Model(&playlist).Where("id = ?", playlistID).Select()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+	playlist.VideosID = ""
+	_, uperr := r.DB.Model(&playlist).Where("id = ?", playlistID).Update()
+	if uperr != nil {
 		return nil, errors.New("failed to update view")
 	}
 	return &playlist, nil
@@ -342,7 +541,15 @@ func (r *queryResolver) Videos(ctx context.Context) ([]*model.Secvid, error) {
 }
 
 func (r *queryResolver) Playlists(ctx context.Context) ([]*model.Playlist, error) {
-	panic(fmt.Errorf("not implemented"))
+	var playlist []*model.Playlist
+
+	err := r.DB.Model(&playlist).Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return playlist, nil
 }
 
 func (r *queryResolver) Comments(ctx context.Context) ([]*model.Comment, error) {
@@ -397,6 +604,30 @@ func (r *queryResolver) GetVideosByUserID(ctx context.Context, userID string) ([
 	return video, nil
 }
 
+func (r *queryResolver) GetVideosByCategory(ctx context.Context, category string) ([]*model.Secvid, error) {
+	var videos []*model.Secvid
+
+	err := r.DB.Model(&videos).Where("category = ?", category).Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
+func (r *queryResolver) GetVideosByName(ctx context.Context, name string) ([]*model.Secvid, error) {
+	var videos []*model.Secvid
+
+	err := r.DB.Model(&videos).Where("LOWER(title) LIKE LOWER(?)", "%"+name+"%").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.Secuser, error) {
 	var user model.Secuser
 
@@ -407,6 +638,18 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.Secuser,
 	}
 
 	return &user, nil
+}
+
+func (r *queryResolver) GetUsersByName(ctx context.Context, name string) ([]*model.Secuser, error) {
+	var users []*model.Secuser
+
+	err := r.DB.Model(&users).Where("LOWER(name) LIKE LOWER(?)", "%"+name+"%").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (r *queryResolver) GetPlaylist(ctx context.Context, id int) (*model.Playlist, error) {
@@ -433,6 +676,18 @@ func (r *queryResolver) GetPlaylistByUser(ctx context.Context, id string) ([]*mo
 	return playlist, nil
 }
 
+func (r *queryResolver) GetPlaylistsByName(ctx context.Context, name string) ([]*model.Playlist, error) {
+	var playlists []*model.Playlist
+
+	err := r.DB.Model(&playlists).Where("LOWER(title) LIKE LOWER(?)", "%"+name+"%").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return playlists, nil
+}
+
 func (r *queryResolver) GetComment(ctx context.Context, id int) (*model.Comment, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -447,6 +702,18 @@ func (r *queryResolver) GetCommentByVideoID(ctx context.Context, vidID int) ([]*
 	}
 
 	return comments, nil
+}
+
+func (r *queryResolver) GetRepliesByCommentID(ctx context.Context, commentID int) ([]*model.Comment, error) {
+	var replies []*model.Comment
+
+	err := r.DB.Model(&replies).Where("replies_id = ?", commentID).Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return replies, nil
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, id int) (*model.Post, error) {
@@ -484,6 +751,9 @@ type queryResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) GetVideoByCategory(ctx context.Context, category string) ([]*model.Secvid, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 func (r *mutationResolver) UpdateVideoViews(ctx context.Context, videoID int) (*model.Secvid, error) {
 	panic(fmt.Errorf("not implemented"))
 }
