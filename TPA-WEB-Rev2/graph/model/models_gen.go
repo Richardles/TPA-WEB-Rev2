@@ -2,6 +2,13 @@
 
 package model
 
+type Activity struct {
+	ID      int    `json:"id"`
+	UserID  string `json:"user_id"`
+	VideoID *int   `json:"video_id"`
+	PostID  *int   `json:"post_id"`
+}
+
 type Comment struct {
 	ID        int    `json:"id"`
 	Comment   string `json:"comment"`
@@ -55,6 +62,11 @@ type Secuser struct {
 	LikeComment        string  `json:"like_comment"`
 	DislikeComment     string  `json:"dislike_comment"`
 	Subscribed         string  `json:"subscribed"`
+	NotifiedBy         string  `json:"notified_by"`
+	LikeVideo          *string `json:"like_video"`
+	DislikeVideo       *string `json:"dislike_video"`
+	LikePost           *string `json:"like_post"`
+	DislikePost        *string `json:"dislike_post"`
 }
 
 type Secvid struct {
@@ -72,6 +84,13 @@ type Secvid struct {
 	Audience    *string `json:"audience"`
 	Visibility  *string `json:"visibility"`
 	Premium     *string `json:"premium"`
+	Date        string  `json:"date"`
+}
+
+type NewActivity struct {
+	UserID  string `json:"user_id"`
+	VideoID *int   `json:"video_id"`
+	PostID  *int   `json:"post_id"`
 }
 
 type NewComment struct {
@@ -121,6 +140,10 @@ type NewUser struct {
 	LikeComment        string  `json:"like_comment"`
 	DislikeComment     string  `json:"dislike_comment"`
 	Subscribed         string  `json:"subscribed"`
+	LikeVideo          *string `json:"like_video"`
+	DislikeVideo       *string `json:"dislike_video"`
+	LikePost           *string `json:"like_post"`
+	DislikePost        *string `json:"dislike_post"`
 }
 
 type NewVideo struct {
@@ -137,4 +160,5 @@ type NewVideo struct {
 	Audience    *string `json:"audience"`
 	Visibility  *string `json:"visibility"`
 	Premium     *string `json:"premium"`
+	Date        string  `json:"date"`
 }

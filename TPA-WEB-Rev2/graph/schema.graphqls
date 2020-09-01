@@ -17,6 +17,11 @@ type Secuser{
     like_comment: String!
     dislike_comment: String!
     subscribed: String!
+    notified_by: String!
+    like_video: String
+    dislike_video: String
+    like_post: String
+    dislike_post: String
 }
 
 type Secvid{
@@ -34,6 +39,7 @@ type Secvid{
     audience: String
     visibility: String
     premium: String
+    date: String!
 }
 
 type Playlist{
@@ -70,12 +76,20 @@ type Post{
     channel_id: String!
 }
 
+type Activity{
+    id: Int!
+    user_id: String!
+    video_id: Int
+    post_id: Int
+}
+
 type Query{
     users: [Secuser!]!
     videos: [Secvid!]!
     playlists: [Playlist!]!
     comments: [Comment!]!
     posts: [Post!]!
+    activities: [Activity!]!
 
     getVideo(id: Int!): Secvid!
     getLastVideo(id: String!): Secvid!
@@ -97,6 +111,8 @@ type Query{
     getPost(id: Int!): Post!
     getPostByChannelId(channel_id: String!): Post!
     getPostsByChannelId(channel_id: String!): [Post!]!
+
+    getActivitiesByUserId(user_id: String!): [Activity!]!
 }
 
 input newUser{
@@ -117,6 +133,10 @@ input newUser{
     like_comment: String!
     dislike_comment: String!
     subscribed: String!
+    like_video: String
+    dislike_video: String
+    like_post: String
+    dislike_post: String
 }
 
 input newVideo{
@@ -133,6 +153,7 @@ input newVideo{
     audience: String
     visibility: String
     premium: String
+    date: String!
 }
 
 input newPlaylist{
@@ -164,9 +185,16 @@ input newPost{
     channel_id: String!
 }
 
+input newActivity{
+    user_id: String!
+    video_id: Int
+    post_id: Int
+}
+
 type Mutation{
     createUser(input: newUser): Secuser!
     updateUser(id: String!, input:newUser): Secuser!
+    updateUserNotify(user_id: String!, notif_id: String!): Secuser!
     updateSubscriber(user_id: String!, target_id: String!): Secuser!
     updateLikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
     updateDislikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
@@ -195,4 +223,8 @@ type Mutation{
     createPost(input: newPost): Post!
     updatePost(id: Int!, input: newPost): Post!
     deletePost(id: Int!): Boolean!
+
+    createActivity(input: newActivity): Activity!
+    updateActivity(id: Int!, input: newActivity): Activity!
+    deleteActivity(id: Int!): Boolean!
 }

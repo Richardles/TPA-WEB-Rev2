@@ -43,6 +43,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Activity struct {
+		ID      func(childComplexity int) int
+		PostID  func(childComplexity int) int
+		UserID  func(childComplexity int) int
+		VideoID func(childComplexity int) int
+	}
+
 	Comment struct {
 		Comment   func(childComplexity int) int
 		Date      func(childComplexity int) int
@@ -55,17 +62,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreateActivity             func(childComplexity int, input *model.NewActivity) int
 		CreateComment              func(childComplexity int, input *model.NewComment) int
 		CreatePlaylist             func(childComplexity int, input *model.NewPlaylist) int
 		CreatePost                 func(childComplexity int, input *model.NewPost) int
 		CreateUser                 func(childComplexity int, input *model.NewUser) int
 		CreateVideo                func(childComplexity int, input *model.NewVideo) int
+		DeleteActivity             func(childComplexity int, id int) int
 		DeleteComment              func(childComplexity int, id int) int
 		DeletePlaylist             func(childComplexity int, id int) int
 		DeletePost                 func(childComplexity int, id int) int
 		DeleteUser                 func(childComplexity int, id string) int
 		DeleteVideo                func(childComplexity int, id int) int
 		EmptyPlaylist              func(childComplexity int, playlistID int) int
+		UpdateActivity             func(childComplexity int, id int, input *model.NewActivity) int
 		UpdateChannelArt           func(childComplexity int, userID string, newArt string) int
 		UpdateChannelDescription   func(childComplexity int, userID string, newDesc string) int
 		UpdateComment              func(childComplexity int, id int, input *model.NewComment) int
@@ -78,6 +88,7 @@ type ComplexityRoot struct {
 		UpdatePost                 func(childComplexity int, id int, input *model.NewPost) int
 		UpdateSubscriber           func(childComplexity int, userID string, targetID string) int
 		UpdateUser                 func(childComplexity int, id string, input *model.NewUser) int
+		UpdateUserNotify           func(childComplexity int, userID string, notifID string) int
 		UpdateVideo                func(childComplexity int, id int, input *model.NewVideo) int
 		UpdateVideoInPlaylist      func(childComplexity int, playlistID int, videoID int) int
 		UpdateVideoView            func(childComplexity int, id int, view *int) int
@@ -107,7 +118,9 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Activities            func(childComplexity int) int
 		Comments              func(childComplexity int) int
+		GetActivitiesByUserID func(childComplexity int, userID string) int
 		GetComment            func(childComplexity int, id int) int
 		GetCommentByVideoID   func(childComplexity int, vidID int) int
 		GetLastVideo          func(childComplexity int, id string) int
@@ -138,11 +151,16 @@ type ComplexityRoot struct {
 		ChannelLocation    func(childComplexity int) int
 		ChannelViews       func(childComplexity int) int
 		DislikeComment     func(childComplexity int) int
+		DislikePost        func(childComplexity int) int
+		DislikeVideo       func(childComplexity int) int
 		Email              func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		LikeComment        func(childComplexity int) int
+		LikePost           func(childComplexity int) int
+		LikeVideo          func(childComplexity int) int
 		Location           func(childComplexity int) int
 		Name               func(childComplexity int) int
+		NotifiedBy         func(childComplexity int) int
 		Premium            func(childComplexity int) int
 		PremiumDate        func(childComplexity int) int
 		ProfilePicture     func(childComplexity int) int
@@ -154,6 +172,7 @@ type ComplexityRoot struct {
 	Secvid struct {
 		Audience    func(childComplexity int) int
 		Category    func(childComplexity int) int
+		Date        func(childComplexity int) int
 		Description func(childComplexity int) int
 		Dislikes    func(childComplexity int) int
 		ID          func(childComplexity int) int
@@ -172,6 +191,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input *model.NewUser) (*model.Secuser, error)
 	UpdateUser(ctx context.Context, id string, input *model.NewUser) (*model.Secuser, error)
+	UpdateUserNotify(ctx context.Context, userID string, notifID string) (*model.Secuser, error)
 	UpdateSubscriber(ctx context.Context, userID string, targetID string) (*model.Secuser, error)
 	UpdateLikeCommentInUser(ctx context.Context, userID string, commentID int) (*model.Secuser, error)
 	UpdateDislikeCommentInUser(ctx context.Context, userID string, commentID int) (*model.Secuser, error)
@@ -196,6 +216,9 @@ type MutationResolver interface {
 	CreatePost(ctx context.Context, input *model.NewPost) (*model.Post, error)
 	UpdatePost(ctx context.Context, id int, input *model.NewPost) (*model.Post, error)
 	DeletePost(ctx context.Context, id int) (bool, error)
+	CreateActivity(ctx context.Context, input *model.NewActivity) (*model.Activity, error)
+	UpdateActivity(ctx context.Context, id int, input *model.NewActivity) (*model.Activity, error)
+	DeleteActivity(ctx context.Context, id int) (bool, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.Secuser, error)
@@ -203,6 +226,7 @@ type QueryResolver interface {
 	Playlists(ctx context.Context) ([]*model.Playlist, error)
 	Comments(ctx context.Context) ([]*model.Comment, error)
 	Posts(ctx context.Context) ([]*model.Post, error)
+	Activities(ctx context.Context) ([]*model.Activity, error)
 	GetVideo(ctx context.Context, id int) (*model.Secvid, error)
 	GetLastVideo(ctx context.Context, id string) (*model.Secvid, error)
 	GetVideosByUserID(ctx context.Context, userID string) ([]*model.Secvid, error)
@@ -219,6 +243,7 @@ type QueryResolver interface {
 	GetPost(ctx context.Context, id int) (*model.Post, error)
 	GetPostByChannelID(ctx context.Context, channelID string) (*model.Post, error)
 	GetPostsByChannelID(ctx context.Context, channelID string) ([]*model.Post, error)
+	GetActivitiesByUserID(ctx context.Context, userID string) ([]*model.Activity, error)
 }
 
 type executableSchema struct {
@@ -235,6 +260,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Activity.id":
+		if e.complexity.Activity.ID == nil {
+			break
+		}
+
+		return e.complexity.Activity.ID(childComplexity), true
+
+	case "Activity.post_id":
+		if e.complexity.Activity.PostID == nil {
+			break
+		}
+
+		return e.complexity.Activity.PostID(childComplexity), true
+
+	case "Activity.user_id":
+		if e.complexity.Activity.UserID == nil {
+			break
+		}
+
+		return e.complexity.Activity.UserID(childComplexity), true
+
+	case "Activity.video_id":
+		if e.complexity.Activity.VideoID == nil {
+			break
+		}
+
+		return e.complexity.Activity.VideoID(childComplexity), true
 
 	case "Comment.comment":
 		if e.complexity.Comment.Comment == nil {
@@ -291,6 +344,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Comment.VideoID(childComplexity), true
+
+	case "Mutation.createActivity":
+		if e.complexity.Mutation.CreateActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createActivity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateActivity(childComplexity, args["input"].(*model.NewActivity)), true
 
 	case "Mutation.createComment":
 		if e.complexity.Mutation.CreateComment == nil {
@@ -351,6 +416,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateVideo(childComplexity, args["input"].(*model.NewVideo)), true
+
+	case "Mutation.deleteActivity":
+		if e.complexity.Mutation.DeleteActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteActivity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteActivity(childComplexity, args["id"].(int)), true
 
 	case "Mutation.deleteComment":
 		if e.complexity.Mutation.DeleteComment == nil {
@@ -423,6 +500,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.EmptyPlaylist(childComplexity, args["playlist_id"].(int)), true
+
+	case "Mutation.updateActivity":
+		if e.complexity.Mutation.UpdateActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateActivity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateActivity(childComplexity, args["id"].(int), args["input"].(*model.NewActivity)), true
 
 	case "Mutation.updateChannelArt":
 		if e.complexity.Mutation.UpdateChannelArt == nil {
@@ -567,6 +656,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(*model.NewUser)), true
+
+	case "Mutation.updateUserNotify":
+		if e.complexity.Mutation.UpdateUserNotify == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUserNotify_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUserNotify(childComplexity, args["user_id"].(string), args["notif_id"].(string)), true
 
 	case "Mutation.updateVideo":
 		if e.complexity.Mutation.UpdateVideo == nil {
@@ -723,12 +824,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Post.Title(childComplexity), true
 
+	case "Query.activities":
+		if e.complexity.Query.Activities == nil {
+			break
+		}
+
+		return e.complexity.Query.Activities(childComplexity), true
+
 	case "Query.comments":
 		if e.complexity.Query.Comments == nil {
 			break
 		}
 
 		return e.complexity.Query.Comments(childComplexity), true
+
+	case "Query.getActivitiesByUserId":
+		if e.complexity.Query.GetActivitiesByUserID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getActivitiesByUserId_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetActivitiesByUserID(childComplexity, args["user_id"].(string)), true
 
 	case "Query.getComment":
 		if e.complexity.Query.GetComment == nil {
@@ -999,6 +1119,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Secuser.DislikeComment(childComplexity), true
 
+	case "Secuser.dislike_post":
+		if e.complexity.Secuser.DislikePost == nil {
+			break
+		}
+
+		return e.complexity.Secuser.DislikePost(childComplexity), true
+
+	case "Secuser.dislike_video":
+		if e.complexity.Secuser.DislikeVideo == nil {
+			break
+		}
+
+		return e.complexity.Secuser.DislikeVideo(childComplexity), true
+
 	case "Secuser.email":
 		if e.complexity.Secuser.Email == nil {
 			break
@@ -1020,6 +1154,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Secuser.LikeComment(childComplexity), true
 
+	case "Secuser.like_post":
+		if e.complexity.Secuser.LikePost == nil {
+			break
+		}
+
+		return e.complexity.Secuser.LikePost(childComplexity), true
+
+	case "Secuser.like_video":
+		if e.complexity.Secuser.LikeVideo == nil {
+			break
+		}
+
+		return e.complexity.Secuser.LikeVideo(childComplexity), true
+
 	case "Secuser.location":
 		if e.complexity.Secuser.Location == nil {
 			break
@@ -1033,6 +1181,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Secuser.Name(childComplexity), true
+
+	case "Secuser.notified_by":
+		if e.complexity.Secuser.NotifiedBy == nil {
+			break
+		}
+
+		return e.complexity.Secuser.NotifiedBy(childComplexity), true
 
 	case "Secuser.premium":
 		if e.complexity.Secuser.Premium == nil {
@@ -1089,6 +1244,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Secvid.Category(childComplexity), true
+
+	case "Secvid.date":
+		if e.complexity.Secvid.Date == nil {
+			break
+		}
+
+		return e.complexity.Secvid.Date(childComplexity), true
 
 	case "Secvid.description":
 		if e.complexity.Secvid.Description == nil {
@@ -1257,6 +1419,11 @@ var sources = []*ast.Source{
     like_comment: String!
     dislike_comment: String!
     subscribed: String!
+    notified_by: String!
+    like_video: String
+    dislike_video: String
+    like_post: String
+    dislike_post: String
 }
 
 type Secvid{
@@ -1274,6 +1441,7 @@ type Secvid{
     audience: String
     visibility: String
     premium: String
+    date: String!
 }
 
 type Playlist{
@@ -1310,12 +1478,20 @@ type Post{
     channel_id: String!
 }
 
+type Activity{
+    id: Int!
+    user_id: String!
+    video_id: Int
+    post_id: Int
+}
+
 type Query{
     users: [Secuser!]!
     videos: [Secvid!]!
     playlists: [Playlist!]!
     comments: [Comment!]!
     posts: [Post!]!
+    activities: [Activity!]!
 
     getVideo(id: Int!): Secvid!
     getLastVideo(id: String!): Secvid!
@@ -1337,6 +1513,8 @@ type Query{
     getPost(id: Int!): Post!
     getPostByChannelId(channel_id: String!): Post!
     getPostsByChannelId(channel_id: String!): [Post!]!
+
+    getActivitiesByUserId(user_id: String!): [Activity!]!
 }
 
 input newUser{
@@ -1357,6 +1535,10 @@ input newUser{
     like_comment: String!
     dislike_comment: String!
     subscribed: String!
+    like_video: String
+    dislike_video: String
+    like_post: String
+    dislike_post: String
 }
 
 input newVideo{
@@ -1373,6 +1555,7 @@ input newVideo{
     audience: String
     visibility: String
     premium: String
+    date: String!
 }
 
 input newPlaylist{
@@ -1404,9 +1587,16 @@ input newPost{
     channel_id: String!
 }
 
+input newActivity{
+    user_id: String!
+    video_id: Int
+    post_id: Int
+}
+
 type Mutation{
     createUser(input: newUser): Secuser!
     updateUser(id: String!, input:newUser): Secuser!
+    updateUserNotify(user_id: String!, notif_id: String!): Secuser!
     updateSubscriber(user_id: String!, target_id: String!): Secuser!
     updateLikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
     updateDislikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
@@ -1435,6 +1625,10 @@ type Mutation{
     createPost(input: newPost): Post!
     updatePost(id: Int!, input: newPost): Post!
     deletePost(id: Int!): Boolean!
+
+    createActivity(input: newActivity): Activity!
+    updateActivity(id: Int!, input: newActivity): Activity!
+    deleteActivity(id: Int!): Boolean!
 }
 `, BuiltIn: false},
 }
@@ -1443,6 +1637,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createActivity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewActivity
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg0, err = ec.unmarshalOnewActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐNewActivity(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1516,6 +1725,21 @@ func (ec *executionContext) field_Mutation_createVideo_args(ctx context.Context,
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteActivity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1606,6 +1830,30 @@ func (ec *executionContext) field_Mutation_emptyPlaylist_args(ctx context.Contex
 		}
 	}
 	args["playlist_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateActivity_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 *model.NewActivity
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("input"))
+		arg1, err = ec.unmarshalOnewActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐNewActivity(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -1873,6 +2121,30 @@ func (ec *executionContext) field_Mutation_updateSubscriber_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateUserNotify_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("user_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["notif_id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("notif_id"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["notif_id"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1981,6 +2253,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getActivitiesByUserId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["user_id"]; ok {
+		ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("user_id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user_id"] = arg0
 	return args, nil
 }
 
@@ -2261,6 +2548,136 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Activity_id(ctx context.Context, field graphql.CollectedField, obj *model.Activity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Activity",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Activity_user_id(ctx context.Context, field graphql.CollectedField, obj *model.Activity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Activity",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Activity_video_id(ctx context.Context, field graphql.CollectedField, obj *model.Activity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Activity",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.VideoID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Activity_post_id(ctx context.Context, field graphql.CollectedField, obj *model.Activity) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Activity",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PostID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
 	defer func() {
@@ -2594,6 +3011,47 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().UpdateUser(rctx, args["id"].(string), args["input"].(*model.NewUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Secuser)
+	fc.Result = res
+	return ec.marshalNSecuser2ᚖGo_Go_GoᚋgraphᚋmodelᚐSecuser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateUserNotify(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUserNotify_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUserNotify(rctx, args["user_id"].(string), args["notif_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3594,6 +4052,129 @@ func (ec *executionContext) _Mutation_deletePost(ctx context.Context, field grap
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createActivity_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateActivity(rctx, args["input"].(*model.NewActivity))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Activity)
+	fc.Result = res
+	return ec.marshalNActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateActivity_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateActivity(rctx, args["id"].(int), args["input"].(*model.NewActivity))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Activity)
+	fc.Result = res
+	return ec.marshalNActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteActivity_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteActivity(rctx, args["id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Playlist_id(ctx context.Context, field graphql.CollectedField, obj *model.Playlist) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4333,6 +4914,40 @@ func (ec *executionContext) _Query_posts(ctx context.Context, field graphql.Coll
 	return ec.marshalNPost2ᚕᚖGo_Go_GoᚋgraphᚋmodelᚐPostᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_activities(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Activities(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Activity)
+	fc.Result = res
+	return ec.marshalNActivity2ᚕᚖGo_Go_GoᚋgraphᚋmodelᚐActivityᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_getVideo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4987,6 +5602,47 @@ func (ec *executionContext) _Query_getPostsByChannelId(ctx context.Context, fiel
 	res := resTmp.([]*model.Post)
 	fc.Result = res
 	return ec.marshalNPost2ᚕᚖGo_Go_GoᚋgraphᚋmodelᚐPostᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getActivitiesByUserId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getActivitiesByUserId_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetActivitiesByUserID(rctx, args["user_id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Activity)
+	fc.Result = res
+	return ec.marshalNActivity2ᚕᚖGo_Go_GoᚋgraphᚋmodelᚐActivityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5664,6 +6320,164 @@ func (ec *executionContext) _Secuser_subscribed(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Secuser_notified_by(ctx context.Context, field graphql.CollectedField, obj *model.Secuser) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secuser",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotifiedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Secuser_like_video(ctx context.Context, field graphql.CollectedField, obj *model.Secuser) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secuser",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LikeVideo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Secuser_dislike_video(ctx context.Context, field graphql.CollectedField, obj *model.Secuser) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secuser",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DislikeVideo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Secuser_like_post(ctx context.Context, field graphql.CollectedField, obj *model.Secuser) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secuser",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LikePost, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Secuser_dislike_post(ctx context.Context, field graphql.CollectedField, obj *model.Secuser) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secuser",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DislikePost, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Secvid_id(ctx context.Context, field graphql.CollectedField, obj *model.Secvid) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6108,6 +6922,40 @@ func (ec *executionContext) _Secvid_premium(ctx context.Context, field graphql.C
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Secvid_date(ctx context.Context, field graphql.CollectedField, obj *model.Secvid) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Secvid",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Date, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -7165,6 +8013,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputnewActivity(ctx context.Context, obj interface{}) (model.NewActivity, error) {
+	var it model.NewActivity
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "user_id":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("user_id"))
+			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "video_id":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("video_id"))
+			it.VideoID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "post_id":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("post_id"))
+			it.PostID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputnewComment(ctx context.Context, obj interface{}) (model.NewComment, error) {
 	var it model.NewComment
 	var asMap = obj.(map[string]interface{})
@@ -7503,6 +8387,38 @@ func (ec *executionContext) unmarshalInputnewUser(ctx context.Context, obj inter
 			if err != nil {
 				return it, err
 			}
+		case "like_video":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("like_video"))
+			it.LikeVideo, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dislike_video":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("dislike_video"))
+			it.DislikeVideo, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "like_post":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("like_post"))
+			it.LikePost, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dislike_post":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("dislike_post"))
+			it.DislikePost, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7619,6 +8535,14 @@ func (ec *executionContext) unmarshalInputnewVideo(ctx context.Context, obj inte
 			if err != nil {
 				return it, err
 			}
+		case "date":
+			var err error
+
+			ctx := graphql.WithFieldInputContext(ctx, graphql.NewFieldInputWithField("date"))
+			it.Date, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -7632,6 +8556,42 @@ func (ec *executionContext) unmarshalInputnewVideo(ctx context.Context, obj inte
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var activityImplementors = []string{"Activity"}
+
+func (ec *executionContext) _Activity(ctx context.Context, sel ast.SelectionSet, obj *model.Activity) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, activityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Activity")
+		case "id":
+			out.Values[i] = ec._Activity_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user_id":
+			out.Values[i] = ec._Activity_user_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "video_id":
+			out.Values[i] = ec._Activity_video_id(ctx, field, obj)
+		case "post_id":
+			out.Values[i] = ec._Activity_post_id(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var commentImplementors = []string{"Comment"}
 
@@ -7711,6 +8671,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "updateUser":
 			out.Values[i] = ec._Mutation_updateUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateUserNotify":
+			out.Values[i] = ec._Mutation_updateUserNotify(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7831,6 +8796,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deletePost":
 			out.Values[i] = ec._Mutation_deletePost(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createActivity":
+			out.Values[i] = ec._Mutation_createActivity(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateActivity":
+			out.Values[i] = ec._Mutation_updateActivity(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteActivity":
+			out.Values[i] = ec._Mutation_deleteActivity(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -8045,6 +9025,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_posts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "activities":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_activities(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -8274,6 +9268,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "getActivitiesByUserId":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getActivitiesByUserId(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -8384,6 +9392,19 @@ func (ec *executionContext) _Secuser(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "notified_by":
+			out.Values[i] = ec._Secuser_notified_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "like_video":
+			out.Values[i] = ec._Secuser_like_video(ctx, field, obj)
+		case "dislike_video":
+			out.Values[i] = ec._Secuser_dislike_video(ctx, field, obj)
+		case "like_post":
+			out.Values[i] = ec._Secuser_like_post(ctx, field, obj)
+		case "dislike_post":
+			out.Values[i] = ec._Secuser_dislike_post(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8446,6 +9467,11 @@ func (ec *executionContext) _Secvid(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Secvid_visibility(ctx, field, obj)
 		case "premium":
 			out.Values[i] = ec._Secvid_premium(ctx, field, obj)
+		case "date":
+			out.Values[i] = ec._Secvid_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8701,6 +9727,57 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNActivity2Go_Go_GoᚋgraphᚋmodelᚐActivity(ctx context.Context, sel ast.SelectionSet, v model.Activity) graphql.Marshaler {
+	return ec._Activity(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNActivity2ᚕᚖGo_Go_GoᚋgraphᚋmodelᚐActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Activity) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐActivity(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐActivity(ctx context.Context, sel ast.SelectionSet, v *model.Activity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Activity(ctx, sel, v)
+}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
@@ -9466,6 +10543,14 @@ func (ec *executionContext) marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgen�
 		return graphql.Null
 	}
 	return ec.___Type(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOnewActivity2ᚖGo_Go_GoᚋgraphᚋmodelᚐNewActivity(ctx context.Context, v interface{}) (*model.NewActivity, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputnewActivity(ctx, v)
+	return &res, graphql.WrapErrorWithInputPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOnewComment2ᚖGo_Go_GoᚋgraphᚋmodelᚐNewComment(ctx context.Context, v interface{}) (*model.NewComment, error) {

@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	pg "github.com/go-pg/pg/v10"
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.Secuser, error) {
@@ -45,6 +47,47 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser)
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input *model.NewUser) (*model.Secuser, error) {
 	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) UpdateUserNotify(ctx context.Context, userID string, notifID string) (*model.Secuser, error) {
+	var user model.Secuser
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.NotifiedBy, ",")
+
+	if arr[0] == "" {
+		user.NotifiedBy = notifID
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == notifID {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, notifID)
+		}
+		res := strings.Join(arr, ",")
+
+		user.NotifiedBy = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
 }
 
 func (r *mutationResolver) UpdateSubscriber(ctx context.Context, userID string, targetID string) (*model.Secuser, error) {
@@ -263,6 +306,7 @@ func (r *mutationResolver) CreateVideo(ctx context.Context, input *model.NewVide
 		Audience:    input.Audience,
 		Visibility:  input.Visibility,
 		Premium:     input.Premium,
+		Date:        time.Now().Format("2006-01-02 15:04:05"),
 	}
 	_, err := r.DB.Model(&video).Insert()
 
@@ -516,6 +560,30 @@ func (r *mutationResolver) DeletePost(ctx context.Context, id int) (bool, error)
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) CreateActivity(ctx context.Context, input *model.NewActivity) (*model.Activity, error) {
+	activity := model.Activity{
+		UserID:  input.UserID,
+		VideoID: input.VideoID,
+		PostID:  input.PostID,
+	}
+
+	_, err := r.DB.Model(&activity).Insert()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &activity, nil
+}
+
+func (r *mutationResolver) UpdateActivity(ctx context.Context, id int, input *model.NewActivity) (*model.Activity, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) DeleteActivity(ctx context.Context, id int) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *queryResolver) Users(ctx context.Context) ([]*model.Secuser, error) {
 	var user []*model.Secuser
 
@@ -565,6 +633,10 @@ func (r *queryResolver) Comments(ctx context.Context) ([]*model.Comment, error) 
 }
 
 func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Activities(ctx context.Context) ([]*model.Activity, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -717,7 +789,15 @@ func (r *queryResolver) GetRepliesByCommentID(ctx context.Context, commentID int
 }
 
 func (r *queryResolver) GetPost(ctx context.Context, id int) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented"))
+	var post model.Post
+
+	err := r.DB.Model(&post).Where("id = ?", id).First()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &post, nil
 }
 
 func (r *queryResolver) GetPostByChannelID(ctx context.Context, channelID string) (*model.Post, error) {
@@ -734,6 +814,19 @@ func (r *queryResolver) GetPostsByChannelID(ctx context.Context, channelID strin
 	}
 
 	return posts, nil
+}
+
+func (r *queryResolver) GetActivitiesByUserID(ctx context.Context, userID string) ([]*model.Activity, error) {
+	var activities []*model.Activity
+
+	arr := strings.Split(userID, ",")
+	err := r.DB.Model(&activities).Where("user_id in (?)", pg.Strings(arr)).Order("id DESC").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return activities, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
