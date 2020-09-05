@@ -63,22 +63,23 @@ type Secuser struct {
 	DislikeComment     string  `json:"dislike_comment"`
 	Subscribed         string  `json:"subscribed"`
 	NotifiedBy         string  `json:"notified_by"`
-	LikeVideo          *string `json:"like_video"`
-	DislikeVideo       *string `json:"dislike_video"`
-	LikePost           *string `json:"like_post"`
-	DislikePost        *string `json:"dislike_post"`
+	LikeVideo          string  `json:"like_video"`
+	DislikeVideo       string  `json:"dislike_video"`
+	LikePost           string  `json:"like_post"`
+	DislikePost        string  `json:"dislike_post"`
+	PremiumType        string  `json:"premium_type"`
 }
 
 type Secvid struct {
 	ID          int     `json:"id"`
 	URL         string  `json:"url"`
 	Title       string  `json:"title"`
-	Likes       *int    `json:"likes"`
-	Dislikes    *int    `json:"dislikes"`
+	Likes       int     `json:"likes"`
+	Dislikes    int     `json:"dislikes"`
 	Description *string `json:"description"`
 	Thumbnail   *string `json:"thumbnail"`
 	UserID      *string `json:"userId"`
-	Views       *int    `json:"views"`
+	Views       int     `json:"views"`
 	PlaylistID  int     `json:"playlist_id"`
 	Category    *string `json:"category"`
 	Audience    *string `json:"audience"`
@@ -149,12 +150,12 @@ type NewUser struct {
 type NewVideo struct {
 	URL         string  `json:"url"`
 	Title       string  `json:"title"`
-	Likes       *int    `json:"likes"`
-	Dislikes    *int    `json:"dislikes"`
+	Likes       int     `json:"likes"`
+	Dislikes    int     `json:"dislikes"`
 	Description *string `json:"description"`
 	Thumbnail   *string `json:"thumbnail"`
 	UserID      *string `json:"userId"`
-	Views       *int    `json:"views"`
+	Views       int     `json:"views"`
 	PlaylistID  int     `json:"playlist_id"`
 	Category    *string `json:"category"`
 	Audience    *string `json:"audience"`

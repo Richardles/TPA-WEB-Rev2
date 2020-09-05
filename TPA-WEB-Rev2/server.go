@@ -29,12 +29,12 @@ func main() {
 
 	db := postgre.New(&pg.Options{
 		Addr:     ":5432",
-		User:     "dxnovgghvhqzgd",
-		Password: "6b52c9b13f3d63b5fa48db501e21f8a1b054c1cea225d221c1d9f081567c6ad5",
+		User:     "gyhkptjvuefhql",
+		Password: "e40ac6782e2c71a5a8b379de4d863f4d08dc3e824d7963d15d3713ec8ae60bac",
 		Database: "d5d8tj6dob63ih",
 	})
 
-	option, err := pg.ParseURL("postgres://dxnovgghvhqzgd:6b52c9b13f3d63b5fa48db501e21f8a1b054c1cea225d221c1d9f081567c6ad5@ec2-54-91-178-234.compute-1.amazonaws.com:5432/d5d8tj6dob63ih")
+	option, err := pg.ParseURL("postgres://gyhkptjvuefhql:e40ac6782e2c71a5a8b379de4d863f4d08dc3e824d7963d15d3713ec8ae60bac@ec2-184-73-249-9.compute-1.amazonaws.com:5432/dadrcqhmc07ii")
 	if err != nil {
 		panic(err);
 	}

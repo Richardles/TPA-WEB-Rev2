@@ -18,22 +18,23 @@ type Secuser{
     dislike_comment: String!
     subscribed: String!
     notified_by: String!
-    like_video: String
-    dislike_video: String
-    like_post: String
-    dislike_post: String
+    like_video: String!
+    dislike_video: String!
+    like_post: String!
+    dislike_post: String!
+    premium_type: String!
 }
 
 type Secvid{
     id: Int!
     url: String!
     title: String!
-    likes: Int
-    dislikes: Int
+    likes: Int!
+    dislikes: Int!
     description: String
     thumbnail: String
     userId: String
-    views: Int
+    views: Int!
     playlist_id: Int!
     category: String
     audience: String
@@ -95,13 +96,17 @@ type Query{
     getLastVideo(id: String!): Secvid!
     getVideosByUserId(user_id: String!): [Secvid!]!
     getVideosByCategory(category: String!): [Secvid!]!
+    getPublicNonPremiumVideos: [Secvid!]!
     getVideosByName(name: String!): [Secvid!]!
+    getNotPremiumVideos: [Secvid!]!
 
     getUser(id: String!): Secuser!
     getUsersByName(name: String!): [Secuser!]!
+    getSubscribed(subscribed: String!): [Secuser!]!
 
     getPlaylist(id: Int!): Playlist!
     getPlaylistByUser(id: String!): [Playlist!]!
+    getPrivatePlaylistFirst(id: String!): [Playlist!]!
     getPlaylistsByName(name: String!): [Playlist!]!
 
     getComment(id: Int!): Comment!
@@ -142,12 +147,12 @@ input newUser{
 input newVideo{
     url: String!
     title: String!
-    likes: Int
-    dislikes: Int
+    likes: Int!
+    dislikes: Int!
     description: String
     thumbnail: String
     userId: String
-    views: Int
+    views: Int!
     playlist_id: Int!
     category: String
     audience: String
@@ -195,6 +200,7 @@ type Mutation{
     createUser(input: newUser): Secuser!
     updateUser(id: String!, input:newUser): Secuser!
     updateUserNotify(user_id: String!, notif_id: String!): Secuser!
+    updatePremium(id: String!, billing: String!): Secuser!
     updateSubscriber(user_id: String!, target_id: String!): Secuser!
     updateLikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
     updateDislikeCommentInUser(user_id: String!, comment_id: Int!): Secuser!
@@ -204,7 +210,9 @@ type Mutation{
 
     createVideo(input: newVideo): Secvid!
     updateVideo(id: Int!, input:newVideo): Secvid!
-    updateVideoView(id: Int!, view: Int): Secvid!
+    updateVideoView(id: Int!, view: Int!): Secvid!
+    updateLikeVideo(user_id: String!, video_id: Int!): Secuser!
+    updateDislikeVideo(user_id: String!, video_id: Int!): Secuser!
     deleteVideo(id: Int!): Boolean!
 
     createPlaylist(input: newPlaylist): Playlist!
@@ -222,6 +230,8 @@ type Mutation{
 
     createPost(input: newPost): Post!
     updatePost(id: Int!, input: newPost): Post!
+    updateLikePost(user_id: String!, post_id: Int!): Secuser!
+    updateDislikePost(user_id: String!, post_id: Int!): Secuser!
     deletePost(id: Int!): Boolean!
 
     createActivity(input: newActivity): Activity!

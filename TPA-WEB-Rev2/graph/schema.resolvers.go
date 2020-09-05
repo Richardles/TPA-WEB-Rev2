@@ -90,6 +90,23 @@ func (r *mutationResolver) UpdateUserNotify(ctx context.Context, userID string, 
 	return &user, nil
 }
 
+func (r *mutationResolver) UpdatePremium(ctx context.Context, id string, billing string) (*model.Secuser, error) {
+	var user model.Secuser
+
+	err := r.DB.Model(&user).Where("id = ?", id).Select()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+	user.PremiumDate = time.Now().Format("2006-01-02 15:04:05")
+	user.PremiumType = billing
+	_, updateErr := r.DB.Model(&user).Where("id = ?", id).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	return &user, nil
+}
+
 func (r *mutationResolver) UpdateSubscriber(ctx context.Context, userID string, targetID string) (*model.Secuser, error) {
 	var user model.Secuser
 	var target model.Secuser
@@ -351,7 +368,7 @@ func (r *mutationResolver) UpdateVideo(ctx context.Context, id int, input *model
 	return &video, nil
 }
 
-func (r *mutationResolver) UpdateVideoView(ctx context.Context, id int, view *int) (*model.Secvid, error) {
+func (r *mutationResolver) UpdateVideoView(ctx context.Context, id int, view int) (*model.Secvid, error) {
 	var video model.Secvid
 
 	err := r.DB.Model(&video).Where("id = ?", id).Select()
@@ -366,8 +383,123 @@ func (r *mutationResolver) UpdateVideoView(ctx context.Context, id int, view *in
 	return &video, nil
 }
 
+func (r *mutationResolver) UpdateLikeVideo(ctx context.Context, userID string, videoID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var video model.Secvid
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&video).Where("id = ?", videoID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.LikeVideo, ",")
+
+	if arr[0] == "" {
+		user.LikeVideo = strconv.Itoa(videoID)
+		video.Likes = video.Likes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(videoID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				video.Likes = video.Likes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(videoID))
+			video.Likes = video.Likes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.LikeVideo = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&video).Where("id = ?", videoID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
+func (r *mutationResolver) UpdateDislikeVideo(ctx context.Context, userID string, videoID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var video model.Secvid
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&video).Where("id = ?", videoID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.DislikeVideo, ",")
+
+	if arr[0] == "" {
+		user.DislikeVideo = strconv.Itoa(videoID)
+		video.Dislikes = video.Dislikes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(videoID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				video.Dislikes = video.Dislikes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(videoID))
+			video.Dislikes = video.Dislikes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.DislikeVideo = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&video).Where("id = ?", videoID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
 func (r *mutationResolver) DeleteVideo(ctx context.Context, id int) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	var video model.Secvid
+	_, err := r.DB.Model(&video).Where("id = ?", id).Delete()
+	if err != nil {
+		return false, errors.New("failed to retrieve channel")
+	}
+	return true, nil
 }
 
 func (r *mutationResolver) CreatePlaylist(ctx context.Context, input *model.NewPlaylist) (*model.Playlist, error) {
@@ -556,6 +688,116 @@ func (r *mutationResolver) UpdatePost(ctx context.Context, id int, input *model.
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) UpdateLikePost(ctx context.Context, userID string, postID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var post model.Post
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&post).Where("id = ?", postID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.LikePost, ",")
+
+	if arr[0] == "" {
+		user.LikePost = strconv.Itoa(postID)
+		post.Likes = post.Likes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(postID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				post.Likes = post.Likes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(postID))
+			post.Likes = post.Likes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.LikePost = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&post).Where("id = ?", postID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
+func (r *mutationResolver) UpdateDislikePost(ctx context.Context, userID string, postID int) (*model.Secuser, error) {
+	var user model.Secuser
+	var post model.Post
+
+	err := r.DB.Model(&user).Where("id = ?", userID).First()
+	if err != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	cerr := r.DB.Model(&post).Where("id = ?", postID).First()
+	if cerr != nil {
+		return nil, errors.New("failed to retrieve channel")
+	}
+
+	arr := strings.Split(user.DislikePost, ",")
+
+	if arr[0] == "" {
+		user.DislikePost = strconv.Itoa(postID)
+		post.Dislikes = post.Dislikes + 1
+	} else {
+		var flag = false
+
+		for idx, i := range arr {
+			if i == strconv.Itoa(postID) {
+				if len(arr) == 1 {
+					arr = nil
+				} else {
+					arr = append(arr[:idx], arr[idx+1:]...)
+				}
+				flag = true
+				post.Dislikes = post.Dislikes - 1
+				break
+			}
+		}
+
+		if flag == false {
+			arr = append(arr, strconv.Itoa(postID))
+			post.Dislikes = post.Dislikes + 1
+		}
+		res := strings.Join(arr, ",")
+
+		user.DislikePost = res
+	}
+	_, updateErr := r.DB.Model(&user).Where("id = ?", userID).Update()
+	if updateErr != nil {
+		return nil, errors.New("failed to update view")
+	}
+
+	_, updateCom := r.DB.Model(&post).Where("id = ?", postID).Update()
+	if updateCom != nil {
+		return nil, errors.New("failed to update view")
+	}
+	return &user, nil
+}
+
 func (r *mutationResolver) DeletePost(ctx context.Context, id int) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -688,10 +930,34 @@ func (r *queryResolver) GetVideosByCategory(ctx context.Context, category string
 	return videos, nil
 }
 
+func (r *queryResolver) GetPublicNonPremiumVideos(ctx context.Context) ([]*model.Secvid, error) {
+	var videos []*model.Secvid
+
+	err := r.DB.Model(&videos).Where("visibility = 'Public' and premium = 'Not premium'").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
 func (r *queryResolver) GetVideosByName(ctx context.Context, name string) ([]*model.Secvid, error) {
 	var videos []*model.Secvid
 
 	err := r.DB.Model(&videos).Where("LOWER(title) LIKE LOWER(?)", "%"+name+"%").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+
+func (r *queryResolver) GetNotPremiumVideos(ctx context.Context) ([]*model.Secvid, error) {
+	var videos []*model.Secvid
+
+	err := r.DB.Model(&videos).Where("premium = 'Not premium'").Select()
 
 	if err != nil {
 		return nil, err
@@ -724,6 +990,19 @@ func (r *queryResolver) GetUsersByName(ctx context.Context, name string) ([]*mod
 	return users, nil
 }
 
+func (r *queryResolver) GetSubscribed(ctx context.Context, subscribed string) ([]*model.Secuser, error) {
+	var channels []*model.Secuser
+
+	arr := strings.Split(subscribed, ",")
+	err := r.DB.Model(&channels).Where("id in (?)", pg.Strings(arr)).Order("name ASC").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return channels, nil
+}
+
 func (r *queryResolver) GetPlaylist(ctx context.Context, id int) (*model.Playlist, error) {
 	var playlist model.Playlist
 
@@ -740,6 +1019,18 @@ func (r *queryResolver) GetPlaylistByUser(ctx context.Context, id string) ([]*mo
 	var playlist []*model.Playlist
 
 	err := r.DB.Model(&playlist).Where("user_id = ?", id).Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return playlist, nil
+}
+
+func (r *queryResolver) GetPrivatePlaylistFirst(ctx context.Context, id string) ([]*model.Playlist, error) {
+	var playlist []*model.Playlist
+
+	err := r.DB.Model(&playlist).Where("user_id = ?", id).Order("view_type ASC").Select()
 
 	if err != nil {
 		return nil, err
@@ -844,6 +1135,20 @@ type queryResolver struct{ *Resolver }
 //  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) GetPublicVideos(ctx context.Context) ([]*model.Secvid, error) {
+	var videos []*model.Secvid
+
+	err := r.DB.Model(&videos).Where("visibility = 'Public'").Select()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return videos, nil
+}
+func (r *queryResolver) GetVideoCountByChannel(ctx context.Context, userID string) ([]*model.Secvid, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 func (r *queryResolver) GetVideoByCategory(ctx context.Context, category string) ([]*model.Secvid, error) {
 	panic(fmt.Errorf("not implemented"))
 }
