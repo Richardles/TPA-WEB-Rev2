@@ -85,6 +85,7 @@ type Activity{
 }
 
 type Query{
+#    testi
     users: [Secuser!]!
     videos: [Secvid!]!
     playlists: [Playlist!]!
